@@ -129,6 +129,44 @@ catch(error){
 const loginUser = async (req, res) => {
 
     const {email,name,password} = req.body;
+
+    if(!email || !password){
+        return res.status(401).json({
+            message:"All fields are required",
+            success: false
+        });
+    }
+    try{
+      const user = await User.findOne({email});
+      if(!user){
+        return res.status(404).json({
+          message:"User not found",
+          success: false
+        });
+      }
+
+      const isMatch = await bcrypt.compare(password, user.password);
+      if(!isMatch){
+        return res.status(401).json({
+          message:"Invalid email or password",
+          success: false
+        });
+      }
+
+      return res.status(200).json({
+        message:"Login successful",
+        success: true,
+        user:user
+      });
+    }
+    catch(error){
+        console.log("Internal Server error:",error)
+        return res.status(500).json({
+            message:"Internal Server error",
+            success: false,
+            error:error.message
+        });
+    }
 }
 
 
