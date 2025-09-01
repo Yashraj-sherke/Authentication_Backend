@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs"
 import User from "../models/user.models.js";
 import crypto from "crypto";
 import sendingEmail from "../utils/sendingEmail.js";
+import jwt from "jsonwebtoken";
 
 
 
@@ -58,11 +59,17 @@ const registerUser = async (req, res) => {
 };
     await sendingEmail(options);
 
-    return res.status(201).json({
-        message:"User registered successfully",
-        success: true,
-        user:newUser,
-    });
+  return res.status(201).json({
+    message: "User registered successfully",
+    success: true,
+    user: {
+      name: newUser.name,
+      email: newUser.email,
+      isVerified: newUser.isVerified,
+      role: newUser.role,
+      _id: newUser._id
+    }
+  });
 }
     catch(error){
         console.log("Internal Server error:",error)
@@ -154,11 +161,43 @@ const loginUser = async (req, res) => {
       }
 
       return res.status(200).json({
+        message: "User login successfully",
+        success: true,
+        user: {
+          name: user.name,
+          email: user.email,
+          isVerified: user.isVerified,
+          role: user.role,
+          _id: user._id
+        }
+      });
+      const token = jwt.sign(
+        {email:email,_id:user._id}, 
+        process.env.JWT_SECRET);
+
+      const cookieOptions = {
+        httpOnly:true,
+        secure:true,
+        maxAge: 24 * 60 * 60 * 1000, // 1 day
+      };
+
+      res.cookie('token', token, cookieOptions);
+
+      return res.status(200).json({
         message:"Login successful",
         success: true,
-        user:user
+        user:{
+          name:user.name,
+          email:user.email,
+          _id:user._id,
+          isVerified:user.isVerified,
+          role:user.role
+        },
+        token:token
       });
     }
+
+    
     catch(error){
         console.log("Internal Server error:",error)
         return res.status(500).json({
